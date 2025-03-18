@@ -30,7 +30,7 @@ const ResetPassword = () => {
       });
 
       alert(response.data.message);
-      navigate("/login"); // Redirect to login after successful reset
+      navigate("/auth/login"); // Redirect to login after successful reset
     } catch (error) {
       setError(error.response?.data?.detail || "Password reset failed. Try again.");
     }

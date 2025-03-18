@@ -13,10 +13,11 @@ const Signup = () => {
     confirm_password: "",
   });
 
-  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [showOtpInput, setShowOtpInput] = useState(false);
   const [error, setError] = useState("");
-  const [userEmail, setUserEmail] = useState("");
   const [message, setMessage] = useState("");
+  const [userEmail, setUserEmail] = useState("");
 
   const navigate = useNavigate();
 
@@ -32,10 +33,11 @@ const Signup = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // ✅ Handle user signup
+  // ✅ Handle Signup & Request OTP
   const handleSignup = async (e) => {
     e.preventDefault();
     setError("");
+    setMessage("");
 
     if (formData.password !== formData.confirm_password) {
       setError("Passwords do not match.");
@@ -49,39 +51,41 @@ const Signup = () => {
         { headers: { "Content-Type": "application/json" } }
       );
 
-      alert(response.data.message);
-      navigate("/auth/login"); // Redirect after successful signup
+      setUserEmail(formData.email); // Save user email for OTP verification
+      setShowOtpInput(true); // Show OTP input field
+      setMessage("An OTP has been sent to your email. Please verify.");
     } catch (error) {
       setError(error.response?.data?.detail || "Signup failed. Please try again.");
     }
   };
 
-  // ✅ Handle Forgot Password (Send Reset Link)
-  const handleForgotPassword = async (e) => {
+  // ✅ Handle OTP Verification
+  const handleVerifyOTP = async (e) => {
     e.preventDefault();
     setError("");
     setMessage("");
 
     try {
       const response = await axios.post(
-        "http://127.0.0.1:8000/forgot-password",
-        { email: userEmail },
+        "http://127.0.0.1:8000/auth/verify-otp",
+        { email: userEmail, otp },
         { headers: { "Content-Type": "application/json" } }
       );
 
-      setMessage("A password reset link has been sent to your email.");
+      alert(response.data.message);
+      navigate("/auth/login"); // Redirect after successful OTP verification
     } catch (error) {
-      setError(error.response?.data?.detail || "Failed to send reset link. Try again.");
+      setError(error.response?.data?.detail || "Invalid OTP. Please try again.");
     }
   };
 
   return (
     <div>
-      <h2>{isForgotPassword ? "Forgot Password" : "Signup"}</h2>
+      <h2>{showOtpInput ? "Verify OTP" : "Signup"}</h2>
       {error && <p style={{ color: "red" }}>{error}</p>}
       {message && <p style={{ color: "green" }}>{message}</p>}
 
-      {!isForgotPassword ? (
+      {!showOtpInput ? (
         // 🔹 Signup Form
         <form onSubmit={handleSignup}>
           <input
@@ -142,25 +146,18 @@ const Signup = () => {
           <button type="submit">Sign Up</button>
         </form>
       ) : (
-        // 🔹 Forgot Password Form
-        <form onSubmit={handleForgotPassword}>
+        // 🔹 OTP Verification Form
+        <form onSubmit={handleVerifyOTP}>
           <input
-            type="email"
-            name="email"
-            placeholder="Enter your Email"
-            value={userEmail}
-            onChange={(e) => setUserEmail(e.target.value)}
+            type="text"
+            name="otp"
+            placeholder="Enter OTP"
+            value={otp}
+            onChange={(e) => setOtp(e.target.value)}
             required
           />
-          <button type="submit">Send Reset Link</button>
+          <button type="submit">Verify OTP</button>
         </form>
-      )}
-
-      {/* 🔹 Forgot Password Button */}
-      {!isForgotPassword && (
-        <p>
-          <button onClick={() => setIsForgotPassword(true)}>Forgot Password?</button>
-        </p>
       )}
     </div>
   );
